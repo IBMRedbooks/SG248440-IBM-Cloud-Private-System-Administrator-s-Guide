@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: demo-pv
+  labels:
+    app: demo-app
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  nfs:
+    path: <path_to_share>
+    server: <nfs_server_IP>
+  persistentVolumeReclaimPolicy: Retain
