@@ -1,0 +1,12 @@
+kind: ClusterRole
+metadata:
+  name: elk-clusterrole
+rules:
+- apiGroups:
+  - extensions
+  resourceNames:
+  - ibm-elk-psp
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use

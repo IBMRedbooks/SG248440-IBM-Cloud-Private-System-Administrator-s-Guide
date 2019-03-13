@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: logstash
+  name: logstash-config
+  namespace: external-logging
+data:
+  k8s.conf: |-
+    input {
+      beats {
+        port => 5044
+        ssl => true
+        ssl_certificate_authorities => ["/usr/share/elasticsearch/config/tls/ca.crt"]
+        ssl_certificate => "/usr/share/elasticsearch/config/tls/logstash.crt"
+        ssl_key => "/usr/share/elasticsearch/config/tls/logstash.key"
+        ssl_key_passphrase => "${APP_KEYSTORE_PASSWORD}"
+        ssl_verify_mode => "force_peer"
+      }
+    }
+
+    filter {
+      if [type] == "kube-logs" {
+        mutate {
+          rename => { "message" => "log" }
+          remove_field => ["host"]
+        }
+
+        date {
+          match => ["time", "ISO8601"]
+        }
+
+        dissect {
+          mapping => {
+            "source" => "/var/log/containers/%{kubernetes.pod}_%{kubernetes.namespace}_%{container_file_ext}"
+          }
+        }
+
+        dissect {
+          mapping => {
+            "container_file_ext" => "%{container}.%{?file_ext}"
+          }
+          remove_field => ["host", "container_file_ext"]
+        }
+
+        grok {
+          "match" => {
+            "container" => "^%{DATA:kubernetes.container_name}-(?<kubernetes.container_id>[0-9A-Za-z]{64,64})"
+          }
+          remove_field => ["container"]
+        }
+      }
+    }
+
+    filter {
+      # Drop empty lines
+      if [log] =~ /^\s*$/ {
+        drop { }
+      }
+      # Attempt to parse JSON, but ignore failures and pass entries on as-is
+      json {
+        source => "log"
+        skip_on_invalid_json => true
+      }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["9.30.123.123:9200"]
+        index => "%{kubernetes.namespace}-%{+YYYY.MM.dd}"
+        document_type => "%{[@metadata][type]}"
+      }
+    }
+  logstash.yml: |-
+    config.reload.automatic: true
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+    xpack.monitoring.enabled: false
+    xpack.monitoring.elasticsearch.url: "http://9.30.123.123:9200"

@@ -1,0 +1,126 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    app: filebeat
+  name: filebeat-ds
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: filebeat
+  template:
+    metadata:
+      annotations:
+        productID: none
+        productName: filebeat
+        productVersion: 5.5.1
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        app: filebeat
+    spec:
+      containers:
+      - env:
+        - name: NODE_HOSTNAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: CA_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: caTruststorePassword
+              name: logging-elk-elasticsearch-pki-secret
+        - name: APP_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: appKeystorePassword
+              name: logging-elk-elasticsearch-pki-secret
+        image: ibmcom/icp-filebeat:5.5.1-f2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - ps aux | grep '[f]ilebeat' || exit 1
+          failureThreshold: 3
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: filebeat
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - ps aux | grep '[f]ilebeat' || exit 1
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/share/filebeat/filebeat.yml
+          name: config
+          subPath: filebeat.yml
+        - mountPath: /usr/share/filebeat/data
+          name: data
+        - mountPath: /usr/share/elasticsearch/config/tls
+          name: certs
+          readOnly: true
+        - mountPath: /var/log/containers
+          name: container-log
+          readOnly: true
+        - mountPath: /var/log/pods
+          name: pod-log
+          readOnly: true
+        - mountPath: /var/lib/docker/containers/
+          name: docker-log
+          readOnly: true
+      restartPolicy: Always
+      securityContext:
+        runAsUser: 0
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Exists
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: filebeat.yml
+            path: filebeat.yml
+          name: logging-elk-filebeat-ds-config
+        name: config
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: logging-elk-certs
+      - emptyDir: {}
+        name: data
+      - hostPath:
+          path: /var/log/containers
+          type: ""
+        name: container-log
+      - hostPath:
+          path: /var/log/pods
+          type: ""
+        name: pod-log
+      - hostPath:
+          path: /var/lib/docker/containers
+          type: ""
+        name: docker-log
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate

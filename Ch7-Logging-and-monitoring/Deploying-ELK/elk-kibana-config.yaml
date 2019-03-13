@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-logging-elk-kibana-config
+  namespace: elk
+data:
+  kibana-entrypoint.sh: |-
+    #!/bin/sh
+    cd /scripts
+    ./map-config.sh
+
+    echo "Launching Kibana"
+    /usr/local/bin/kibana-docker
+  kibana.yml-ppc: |
+    # ppc64le-only config. Must not include refs to X-Pack.
+    server.name: "kibana"
+    server.host: "0"
+    server.port: 5601
+    elasticsearch.url: "https://elasticsearch:9200"
+    elasticsearch.ssl.certificate: /usr/share/elasticsearch/config/tls/kibana.crt
+    elasticsearch.ssl.key: /usr/share/elasticsearch/config/tls/kibana.key
+    elasticsearch.ssl.certificateAuthorities: /usr/share/elasticsearch/config/tls/ca.crt
+    #elasticsearch.ssl.keyPassphrase configured via env var
+    elasticsearch.ssl.verificationMode: certificate
+    # SSL for outgoing requests from the Kibana Server (PEM formatted)
+    server.ssl.enabled: true
+    server.ssl.key: /usr/share/elasticsearch/config/tls/kibana.key
+    server.ssl.certificate: /usr/share/elasticsearch/config/tls/kibana.crt
+    server.ssl.certificateAuthorities: /usr/share/elasticsearch/config/tls/ca.crt
+    kibana.index: ".app-kibana"
+    server.basePath: "/app-kibana"
+  kibana.yml-x86: |
+    # x86-only config. Must include refs to X-Pack.
+    server.name: "kibana"
+    server.host: "0"
+    server.port: 5601
+    elasticsearch.url: "https://elasticsearch:9200"
+    elasticsearch.ssl.certificate: /usr/share/elasticsearch/config/tls/kibana.crt
+    elasticsearch.ssl.key: /usr/share/elasticsearch/config/tls/kibana.key
+    elasticsearch.ssl.certificateAuthorities: /usr/share/elasticsearch/config/tls/ca.crt
+    #elasticsearch.ssl.keyPassphrase configured via env var
+    elasticsearch.ssl.verificationMode: certificate
+    # SSL for outgoing requests from the Kibana Server (PEM formatted)
+    server.ssl.enabled: true
+    server.ssl.key: /usr/share/elasticsearch/config/tls/kibana.key
+    server.ssl.certificate: /usr/share/elasticsearch/config/tls/kibana.crt
+    server.ssl.certificateAuthorities: /usr/share/elasticsearch/config/tls/ca.crt
+
+    xpack.monitoring.enabled: false
+    xpack.security.enabled: false
+    xpack.graph.enabled: false
+    xpack.reporting.enabled: false
+    xpack.ml.enabled: false
+    kibana.index: ".app-kibana"
+    server.basePath: "/app-kibana"
+  map-config.sh: |-
+    #!/bin/bash
+    # Configures a symlink from, e.g. /usr/share/elasticsearch-config-[arch] to
+    # /usr/share/elasticsearch/config. The actual paths vary depending on which
+    # product is being configured.
+
+    PPCROOT=${CFG_BASEDIR}-config-ppc
+    X86ROOT=${CFG_BASEDIR}-config-x86
+    TARGET=${CFG_BASEDIR}/config
+    MACTYPE=`uname -m`
+    echo "Machine type: $MACTYPE"
+
+    mkdir -p $TARGET 2>/dev/null
+
+    function link {
+      for i in `ls $1`; do
+        echo "Linking $1/$i to $TARGET/$i"
+        # Link, don't copy, so that changes on K8s side are propagated down to product
+        ln -sf $1/$i $TARGET/$i
+      done
+    }
+
+    [ "$MACTYPE" == "ppc64le" ] && link $PPCROOT && exit
+    # Default to x86
+    link $X86ROOT

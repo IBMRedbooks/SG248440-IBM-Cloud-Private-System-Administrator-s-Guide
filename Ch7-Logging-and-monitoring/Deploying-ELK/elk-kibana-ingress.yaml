@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: app-kibana-ingress
+  namespace: elk
+  annotations:
+    icp.management.ibm.com/auth-type: "access-token"
+    icp.management.ibm.com/rewrite-target: "/"
+    icp.management.ibm.com/secure-backends: "true"
+    kubernetes.io/ingress.class: "ibm-icp-management"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: "/app-kibana"
+        backend:
+          serviceName: "kibana"
+          servicePort: 5601

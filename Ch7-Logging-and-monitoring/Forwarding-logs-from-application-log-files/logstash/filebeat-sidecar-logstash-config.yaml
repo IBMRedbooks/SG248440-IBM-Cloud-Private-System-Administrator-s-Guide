@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-sidecar-logstash-config
+  namespace: sidecar
+data:
+  filebeat.yml: |-
+    filebeat.prospectors:
+    - input_type: log
+      paths: '${LOG_DIRS}'
+      exclude_lines: '${EXCLUDE_LINES:[]}'
+      include_lines: '${INCLUDE_LINES:[]}'
+      
+      ignore_older: '${IGNORE_OLDER:0}'
+      scan_frequency: '${SCAN_FREQUENCY:10s}'
+      symlinks: '${SYMLINKS:true}'
+      max_bytes: '${MAX_BYTES:10485760}'
+      harvester_buffer_size: '${HARVESTER_BUFFER_SIZE:16384}'
+
+      multiline.pattern: '${MULTILINE_PATTERN:^\s}'
+      multiline.match: '${MULTILINE_MATCH:after}'
+      multiline.negate: '${MULTILINE_NEGATE:false}'
+
+      fields_under_root: '${FIELDS_UNDER_ROOT:true}'
+      fields:
+        type: '${FIELDS_TYPE:kube-logs}'
+        node.hostname: '${NODE_HOSTNAME}'
+        pod.ip: '${POD_IP}'
+        kubernetes.namespace: '${NAMESPACE}'
+        kubernetes.pod: '${POD_NAME}'
+      tags: '${TAGS:sidecar-ls}'
+
+    filebeat.config.modules:
+      # Set to true to enable config reloading
+      reload.enabled: true
+
+    output.logstash:
+      hosts: '${LOGSTASH:logstash.kube-system:5044}'
+      timeout: 15
+      ssl.certificate_authorities: ["/usr/share/elasticsearch/config/tls/ca.crt"]
+      ssl.certificate: "/usr/share/elasticsearch/config/tls/filebeat.crt"
+      ssl.key: "/usr/share/elasticsearch/config/tls/filebeat.key"
+      ssl.key_passphrase: ${APP_KEYSTORE_PASSWORD}
+
+    logging.level: '${LOG_LEVEL:info}'

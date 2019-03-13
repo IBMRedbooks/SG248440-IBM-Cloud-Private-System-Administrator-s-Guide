@@ -1,0 +1,54 @@
+cluster_domain: cluster.local
+mode: standard
+nameOverride: elk
+general:
+  mode: standard
+image:
+  pullPolicy: IfNotPresent
+  pullSecret:
+    enabled: true
+    name: ibmcomregkey
+curator:
+  name: log-curator
+  app:
+    count: 28
+elasticsearch:
+  client:
+    replicas: "1"
+    name: client
+  data:
+    name: data
+    replicas: "1"
+    storage:
+      persistent: true
+      size: 20Gi
+      storageClass: logging-storage-datanode
+      useDynamicProvisioning: false
+  master:
+    name: master
+    replicas: "1"
+  name: elasticsearch
+filebeat:
+  name: filebeat-ds
+  scope:
+    namespaces:
+    - production
+    nodes:
+      production: "true"
+kibana:
+  name: kibana
+  install: true
+  external:
+logstash:
+  name: logstash
+  replicas: "1"
+security:
+  ca:
+    external:
+      certFieldName: ca.crt
+      keyFieldName: ca.key
+      secretName: elk-ca-secret
+    origin: external
+  enabled: true
+xpack:
+  monitoring: true

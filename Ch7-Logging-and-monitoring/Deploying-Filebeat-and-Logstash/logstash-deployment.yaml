@@ -1,0 +1,122 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: logstash
+  name: logstash
+  namespace: external-logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        productID: none
+        productName: Logstash
+        productVersion: 5.5.1
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        app: logstash
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+              - key: management
+                operator: In
+                values:
+                - "true"
+      containers:
+      - command:
+        - /bin/bash
+        - /scripts/entrypoint.sh
+        env:
+        - name: LS_JAVA_OPTS
+          value: -Xmx512m -Xms512m
+        - name: CFG_BASEDIR
+          value: /usr/share/logstash
+        - name: CA_TRUSTSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: caTruststorePassword
+              name: logging-elk-elasticsearch-pki-secret
+        - name: APP_KEYSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: appKeystorePassword
+              name: logging-elk-elasticsearch-pki-secret
+        image: ibmcom/icp-logstash:5.5.1-f2
+        imagePullPolicy: IfNotPresent
+        name: logstash
+        ports:
+        - containerPort: 5044
+          protocol: TCP
+        resources:
+          limits:
+            memory: 1Gi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/share/logstash/pipeline
+          name: pipeline-config
+        - mountPath: /usr/share/logstash/config/logstash.yml
+          name: logstash-config
+          subPath: logstash.yml
+        - mountPath: /usr/share/logstash/data
+          name: data
+        - mountPath: /scripts
+          name: entrypoint
+        - mountPath: /usr/share/elasticsearch/config/tls
+          name: certs
+          readOnly: true
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Exists
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: k8s.conf
+            path: k8s.conf
+          name: logging-elk-logstash-config
+        name: pipeline-config
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: logstash.yml
+            path: logstash.yml
+          name: logging-elk-logstash-config
+        name: logstash-config
+      - configMap:
+          defaultMode: 365
+          items:
+          - key: logstash-entrypoint.sh
+            path: entrypoint.sh
+          - key: map-config.sh
+            path: map-config.sh
+          name: logging-elk-elasticsearch-entrypoint
+        name: entrypoint
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: logging-elk-certs
+      - emptyDir: {}
+        name: data

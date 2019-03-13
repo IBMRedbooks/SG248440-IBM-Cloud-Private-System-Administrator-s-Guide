@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: websphere-sidecar-logstash
+  name: websphere-sidecar-logstash
+  namespace: sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: websphere-sidecar-logstash
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: websphere-sidecar-logstash
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: ibm-websphere-liberty
+        args: [/bin/sh, -c,'i=0; while true; do echo "Using Logstash - Logging data to app.log - $i: $(date)" >> /var/log/app.log; i=$((i+1)); sleep 1; done']
+        image: websphere-liberty:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: JVM_ARGS
+        - name: WLP_LOGGING_CONSOLE_FORMAT
+          value: json
+        - name: WLP_LOGGING_CONSOLE_LOGLEVEL
+          value: info
+        - name: WLP_LOGGING_CONSOLE_SOURCE
+          value: message,trace,accessLog,ffdc
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: HTTPENDPOINT_HTTPSPORT
+          value: "9443"
+        - name: KEYSTORE_REQUIRED
+          value: "false"
+        resources: {}
+        volumeMounts:
+        - name: was-logging
+          mountPath: /var/log
+      - name: filebeat-sidecar
+        image: ibmcom/icp-filebeat:5.5.1-f2
+        env:
+          - name: LOG_DIRS
+            value: /var/log/applogs/app.log
+          - name: NODE_HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: CA_TRUSTSTORE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: caTruststorePassword
+                name: logging-elk-elasticsearch-pki-secret
+          - name: APP_KEYSTORE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: appKeystorePassword
+                name: logging-elk-elasticsearch-pki-secret
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+        volumeMounts:
+        - name: was-logging
+          mountPath: /var/log/applogs
+        - name: filebeat-config
+          mountPath: /usr/share/filebeat/filebeat.yml
+          subPath: filebeat.yml
+        - mountPath: /usr/share/elasticsearch/config/tls
+          name: certs
+          readOnly: true
+      volumes:
+      - name: was-logging
+        emptyDir: {}
+      - name: filebeat-config
+        configMap:
+          name: filebeat-sidecar-logstash-config
+          items:
+            - key: filebeat.yml
+              path: filebeat.yml
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: logging-elk-certs

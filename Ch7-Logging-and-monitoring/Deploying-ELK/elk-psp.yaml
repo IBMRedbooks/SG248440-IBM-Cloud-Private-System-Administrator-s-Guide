@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ibm-elk-psp
+spec:
+  allowPrivilegeEscalation: true
+  privileged: true
+  allowedCapabilities:
+  - CHMOD
+  - CHOWN
+  - IPC_LOCK
+  - SYS_RESOURCE
+  forbiddenSysctls:
+  - '*'
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - configMap
+  - emptyDir
+  - projected
+  - secret
+  - downwardAPI
+  - persistentVolumeClaim
+  - hostPath

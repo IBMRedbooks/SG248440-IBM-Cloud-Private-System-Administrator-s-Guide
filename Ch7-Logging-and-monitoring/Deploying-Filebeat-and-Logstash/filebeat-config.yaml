@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: filebeat-ds
+  name: filebeat-config
+  namespace: external-logging
+data:
+  filebeat.yml: |-
+    filebeat.prospectors:
+    - input_type: log
+      paths:
+        - /var/log/containers/*_external_*.log
+      scan_frequency: 10s
+      symlinks: true
+      json.message_key: log
+      json.keys_under_root: true
+      json.add_error_key: true
+      multiline.pattern: '^\s'
+      multiline.match: after
+      fields_under_root: true
+      fields:
+        type: kube-logs
+        node.hostname: ${NODE_HOSTNAME}
+        pod.ip: ${POD_IP}
+      tags:
+          - k8s-app
+    filebeat.config.modules:
+      # Set to true to enable config reloading
+      reload.enabled: true
+    output.logstash:
+      hosts: logstash:5044
+      timeout: 15
+      ssl.certificate_authorities: ["/usr/share/elasticsearch/config/tls/ca.crt"]
+      ssl.certificate: "/usr/share/elasticsearch/config/tls/filebeat.crt"
+      ssl.key: "/usr/share/elasticsearch/config/tls/filebeat.key"
+      ssl.key_passphrase: "${APP_KEYSTORE_PASSWORD}"
+    logging.level: info

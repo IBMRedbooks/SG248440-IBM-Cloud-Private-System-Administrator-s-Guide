@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: app-logging-elk-elasticsearch
+    chart: ibm-icplogging-2.2.0
+    component: kibana
+    heritage: Tiller
+    release: app-logging
+  name: kibana
+  namespace: elk
+spec:
+  clusterIP: 10.0.144.80
+  ports:
+  - port: 5601
+    protocol: TCP
+    targetPort: ui
+  selector:
+    app: app-logging-elk-elasticsearch
+    component: kibana
+    role: kibana
+  type: ClusterIP

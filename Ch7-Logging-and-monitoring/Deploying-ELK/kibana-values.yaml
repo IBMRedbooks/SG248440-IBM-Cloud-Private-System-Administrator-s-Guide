@@ -1,0 +1,17 @@
+elasticsearch:
+  service:
+    name: elasticsearch.elk
+    port: 9200
+  security:
+    enabled: true
+    secretRoot: app-logging-elk
+kibana:
+  external:
+  image:
+    repository: mycluster.icp:8500/ibmcom/icp-kibana-amd64
+    tag: 5.5.1-f2
+  internal: 5601
+  replicas: "1"
+  managedMode: false
+xpack:
+  monitoring: true
