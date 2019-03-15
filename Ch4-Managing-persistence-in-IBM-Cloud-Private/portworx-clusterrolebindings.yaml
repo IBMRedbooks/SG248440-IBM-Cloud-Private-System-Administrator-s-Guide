@@ -1,0 +1,72 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: px-account-anyuid-binding
+roleRef:
+  kind: ClusterRole
+  name: ibm-anyuid-hostaccess-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: px-account
+  namespace: kube-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: px-account-privileged-binding
+roleRef:
+  kind: ClusterRole
+  name: ibm-privileged-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: px-account
+  namespace: kube-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: stork-sa-anyuid-binding
+roleRef:
+  kind: ClusterRole
+  name: ibm-anyuid-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: stork-account
+  namespace: kube-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: stork-sched-sa-anyuid-binding
+roleRef:
+  kind: ClusterRole
+  name: ibm-anyuid-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: stork-scheduler-account
+  namespace: kube-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: portworkx-hook-anyuid-binding
+roleRef:
+  kind: ClusterRole
+  name: ibm-anyuid-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: portworx-hook
+  namespace: kube-system

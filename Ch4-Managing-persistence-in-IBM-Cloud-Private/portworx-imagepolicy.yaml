@@ -1,0 +1,31 @@
+apiVersion: securityenforcement.admission.cloud.ibm.com/v1beta1
+kind: ImagePolicy
+metadata:
+  name: "portworx-image-policy"
+  namespace: "kube-system"
+spec:
+  repositories:
+  - name: "docker.io/portworx/*"
+    policy:
+      va:
+        enabled: false
+  - name: "docker.io/openstorage/*"
+    policy:
+      va:
+        enabled: false
+  - name: "gcr.io/google-containers/*"
+    policy:
+      va:
+        enabled: false
+  - name: "docker.io/lachlanevenson/*"
+    policy:
+      va:
+        enabled: false
+  - name: "docker.io/hrishi/*"
+    policy:
+      va:
+        enabled: false
+  - name: "quay.io/k8scsi/*"
+    policy:
+      va:
+        enabled: false
