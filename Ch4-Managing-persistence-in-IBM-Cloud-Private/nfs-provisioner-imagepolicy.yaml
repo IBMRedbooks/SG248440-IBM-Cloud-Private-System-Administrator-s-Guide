@@ -1,0 +1,7 @@
+apiVersion: securityenforcement.admission.cloud.ibm.com/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: nfs-client-provisioner-whitelist
+spec:
+  repositories:
+    - name: quay.io/external_storage/nfs-client-provisioner:*
