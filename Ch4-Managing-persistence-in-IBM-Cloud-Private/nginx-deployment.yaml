@@ -1,0 +1,29 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: nginx-nfs
+  labels:
+    app: nginx-nfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-nfs
+  template:
+    metadata:
+      labels:
+        app: nginx-nfs
+    spec:
+      volumes:
+      - name: demo-nfs-storage
+        persistentVolumeClaim:
+          claimName: demo-pvc
+      containers:
+        - name: nginx-nfs-container
+          image: nginx
+          ports:
+            - containerPort: 80
+              name: "http-server"
+          volumeMounts:
+            - mountPath: "/usr/share/nginx/html"
+              name: demo-nfs-storage
