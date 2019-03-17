@@ -1,0 +1,13 @@
+rookOperatorNamespace: "rook"
+cluster:
+  storage:
+    nodes:
+      - name: "10.73.147.205"
+        devices:
+          - name: "xvde"
+      - name: "10.73.147.237"
+        devices:
+          - name: "xvde"
+      - name: "10.73.147.243"
+        devices:
+          - name: "xvde"
