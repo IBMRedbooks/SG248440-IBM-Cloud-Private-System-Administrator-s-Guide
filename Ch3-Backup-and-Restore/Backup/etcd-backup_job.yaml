@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: etcddump
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+              - key: master
+                operator: In
+                values:
+                - "true"
+      containers:
+      - name: etcddump
+        image: ibmcom/etcd:3.2.24
+        command: ["/bin/sh","-c","cat /certs/etcd-cert > client.pem; cat /certs/etcd-key > client-key.pem; cat /certs/etcd-ca > ca.pem; etcdctl --cert=client.pem --key=client-key.pem --cacert=ca.pem --endpoints https://$(ENDPOINT):4001 snapshot save /backup/etcd/etcddump.$(date +%Y-%m-%d_%H:%M:%S).db"]
+        env:
+        - name: ENDPOINT
+          value: "#ETCD-ENDPOINT"
+        - name: ETCDCTL_API
+          value: "3"
+        volumeMounts:
+        - mountPath: "/backup"
+          name: backup
+        - mountPath: "/certs"
+          name: etcd-certs
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Exists
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: core-backup
+      - name: etcd-certs
+        secret:
+          secretName: etcd-secret
+      restartPolicy: Never
+  backoffLimit: 1

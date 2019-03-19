@@ -1,0 +1,203 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: logging-elk-elasticsearch
+    chart: ibm-icplogging-2.2.0
+    component: elasticsearch
+    heritage: Tiller
+    release: logging
+  name: logging-elk-elasticsearch-config
+  namespace: kube-system
+data:
+  client.yml: |-
+    cluster.name: "elasticsearch"
+    network.host: 0.0.0.0
+    discovery.zen.ping.unicast.hosts: master-discovery
+    discovery.zen.minimum_master_nodes: 1
+    transport.tcp.port: 9300
+    node.name: ${HOSTNAME}
+
+
+    xpack.security.enabled: false
+    xpack.monitoring.enabled: false
+    xpack.ml.enabled: false
+    xpack.watcher.enabled: false
+
+
+    searchguard:
+      enable_snapshot_restore_privilege: true
+      disabled: "false"
+      nodes_dn:
+        - "CN=elasticsearch-transport,OU=IBM Cloud Private"
+      authcz.admin_dn:
+        - "CN=sgadmin,OU=IBM Cloud Private"
+      ssl.transport:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        enable_openssl_if_available: true
+        enforce_hostname_verification: false
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-transport-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+      ssl.http:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        clientauth_mode: OPTIONAL
+        enable_openssl_if_available: true
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+    node.master: false
+    node.data: false
+    http.enabled: true
+    http.port: 9200
+    path.repo: ["/usr/share/elasticsearch/backups"]
+  data.yml: |-
+    cluster.name: "elasticsearch"
+    network.host: 0.0.0.0
+    discovery.zen.ping.unicast.hosts: master-discovery
+    discovery.zen.minimum_master_nodes: 1
+    transport.tcp.port: 9300
+    node.name: ${HOSTNAME}
+
+
+    xpack.security.enabled: false
+    xpack.monitoring.enabled: false
+    xpack.ml.enabled: false
+    xpack.watcher.enabled: false
+
+
+    searchguard:
+      enable_snapshot_restore_privilege: true
+      disabled: "false"
+      nodes_dn:
+        - "CN=elasticsearch-transport,OU=IBM Cloud Private"
+      authcz.admin_dn:
+        - "CN=sgadmin,OU=IBM Cloud Private"
+      ssl.transport:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        enable_openssl_if_available: true
+        enforce_hostname_verification: false
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-transport-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+      ssl.http:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        clientauth_mode: OPTIONAL
+        enable_openssl_if_available: true
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+    node.master: false
+    node.data: true
+    http.enabled: false
+    path.repo: ["/usr/share/elasticsearch/backups"]
+  log4j2.properties: |
+    status = error
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] %marker%m%n
+
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = console
+
+    logger.searchguard.name = com.floragunn
+    logger.searchguard.level = info
+  master.yml: |-
+    cluster.name: "elasticsearch"
+    network.host: 0.0.0.0
+    discovery.zen.ping.unicast.hosts: master-discovery
+    discovery.zen.minimum_master_nodes: 1
+    transport.tcp.port: 9300
+    node.name: ${HOSTNAME}
+
+
+    xpack.security.enabled: false
+    xpack.monitoring.enabled: false
+    xpack.ml.enabled: false
+    xpack.watcher.enabled: false
+
+
+    searchguard:
+      enable_snapshot_restore_privilege: true
+      disabled: "false"
+      nodes_dn:
+        - "CN=elasticsearch-transport,OU=IBM Cloud Private"
+      authcz.admin_dn:
+        - "CN=sgadmin,OU=IBM Cloud Private"
+      ssl.transport:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        enable_openssl_if_available: true
+        enforce_hostname_verification: false
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-transport-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+      ssl.http:
+        enabled: true
+        enabled_protocols:
+          - "TLSv1.2"
+        clientauth_mode: OPTIONAL
+        enable_openssl_if_available: true
+        keystore_type: JKS
+        keystore_filepath: tls/elasticsearch-keystore.jks
+        keystore_password: ${APP_KEYSTORE_PASSWORD}
+        truststore_type: JKS
+        truststore_filepath: tls/truststore.jks
+        truststore_password: ${CA_TRUSTSTORE_PASSWORD}
+    node.master: true
+    node.data: false
+    http.enabled: false
+    path.repo: ["/usr/share/elasticsearch/backups"]
+  role_mapping.yml: "kibana_system: \n  - \"CN=kibana,OU=IBM Cloud Private\"\nreadonly_user:\n
+    \ - \"CN=kibana,OU=IBM Cloud Private\"\nremote_monitoring_agent:\n  - \"CN=kibana,OU=IBM
+    Cloud Private\"\n  - \"CN=logstash-monitoring,OU=IBM Cloud Private\"\nremote_monitoring_agent_2:\n
+    \ - \"CN=kibana,OU=IBM Cloud Private\"\n  - \"CN=logstash-monitoring,OU=IBM Cloud
+    Private\"\nmonitoring_user:\n  - \"CN=kibana,OU=IBM Cloud Private\"\n  - \"CN=logstash-monitoring,OU=IBM
+    Cloud Private\"\nsuperuser:\n  - \"CN=superuser,OU=IBM Cloud Private\"\n  # this
+    allows the kibana console to send REST calls to elasticsearch API\n  - \"CN=kibana,OU=IBM
+    Cloud Private\"\nlogstash_user:\n  - \"CN=logstash-elasticsearch,OU=IBM Cloud
+    Private\"\ncurator_user:\n  - \"CN=curator,OU=IBM Cloud Private\"\nsg_snapshot_restore:\n
+    \ - \"CN=curator,OU=IBM Cloud Private\"\n  - \"CN=kibana,OU=IBM Cloud Private\""
+  roles.yml: |-
+    logstash_user:
+      cluster: [ 'manage_index_templates', 'monitor']
+      indices:
+        - names: [ 'logstash-*' ]
+          privileges: [ 'write', 'delete', 'create_index' ]
+    curator_user:
+      cluster: [ 'monitor' ]
+      indices:
+        - names: [ '*' ]
+          privileges: [ 'delete_index', 'monitor', 'manage', 'read' ]
+    readonly_user:
+      indices:
+        - names: [ '*' ]
+          privileges: [ 'read' ]
+    # this role covers the missing permissions for monitoring in remote_monitoring_agent
+    remote_monitoring_agent_2:
+      cluster: [ 'monitor', 'cluster:admin/xpack/monitoring/bulk' ]

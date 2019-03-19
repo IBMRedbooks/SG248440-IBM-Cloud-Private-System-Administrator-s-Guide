@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: logging-elk-snapshot
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+              - key: management
+                operator: In
+                values:
+                - "true"
+      containers:
+      - name: es-snapshot
+        image: ibmcom/curl:4.2.0-f2
+        command: ["/bin/bash","-c","curl -XPUT --cacert '/certs/ca.crt' --cert '/certs/curator.crt' --key '/certs/curator.key' -H 'Content-Type: application/json' -d '{\"indices\": \"$(INDICES)\", \"ignore_unavailable\": true,\"include_global_state\": false}' \"https://elasticsearch:9200/_snapshot/$(ES_REPO)/snapshot_$(date +%Y-%m-%d_%H-%M-%S)?wait_for_completion=true\""]
+        env:
+        - name: INDICES
+          value: "*"
+        - name: ES_REPO
+          value: "es_backup"
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: logging-elk-certs
+      initContainers:
+      - command: ["/bin/bash","-c","curl -XPOST --cacert '/certs/ca.crt' --cert '/certs/curator.crt' --key '/certs/curator.key' -H 'Content-Type: application/json' \"https://elasticsearch:9200/_snapshot/$(ES_REPO)/_verify\" || { echo \"Verify failed for $(ES_REPO)\"; exit 1; }"]
+        image: ibmcom/curl:4.2.0-f2
+        imagePullPolicy: IfNotPresent
+        name: verify
+        - name: ES_REPO
+          value: "es_backup"
+        resources: {}
+        securityContext:
+          privileged: true
+          procMount: Default
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+      volumes:
+      - name: certs
+        secret:
+          defaultMode: 420
+          secretName: logging-elk-certs
+      restartPolicy: Never
+  backoffLimit: 1

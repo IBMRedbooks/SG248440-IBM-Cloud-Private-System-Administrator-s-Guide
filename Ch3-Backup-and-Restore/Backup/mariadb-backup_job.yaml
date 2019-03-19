@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mariadb-backup
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: mariadb-backup
+        image: ibmcom/mariadb:10.2.19
+        command: ["/bin/bash","-c","mysqldump --host=$MARIADB_SERVICE_HOST --user=root --password=$MYSQL_ROOT_PASSWORD --all-databases > /backup/mariadb/backup-$(date +%Y-%m-%d_%H:%M:%S).sql"]
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: OAUTH2DB_PASSWORD
+              name: platform-mariadb-credentials
+        volumeMounts:
+        - mountPath: "/backup"
+          name: backup
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: core-backup
+      restartPolicy: Never
+  backoffLimit: 4

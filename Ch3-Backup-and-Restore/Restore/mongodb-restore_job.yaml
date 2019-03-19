@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodbrestore
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: beta.kubernetes.io/arch
+                operator: In
+                values:
+                - amd64
+                - ppc64le
+                - s390x
+              - key: master
+                operator: In
+                values:
+                - "true"
+      containers:
+      - name: mongodbrestore
+        image: ibmcom/icp-mongodb:4.0.5
+        command: ["/bin/bash","-c","cat /certs/tls.crt certs/tls.key > mongo.pem; export PRIMARY=$(mongo --host rs0/mongodb:27017 --username admin --password $ADMIN_PASSWORD --authenticationDatabase admin --ssl --sslCAFile /ca/tls.crt --sslPEMKeyFile mongo.pem --eval=\"db.isMaster()['\"'primary'\"']\" | grep ^icp-mongodb-); mongorestore --host $PRIMARY --username admin --password $ADMIN_PASSWORD --authenticationDatabase admin --ssl --sslCAFile /ca/tls.crt --sslPEMKeyFile mongo.pem --oplogReplay --gzip --archive=/backup/mongodb/$BACKUP_NAME"]
+        env:
+        - name: BACKUP_NAME
+          value: "#BACKUP"
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: icp-mongodb-admin
+        volumeMounts:
+        - mountPath: "/backup"
+          name: backup
+        - mountPath: "/ca"
+          name: cluster-ca
+        - mountPath: "/certs"
+          name: mongodb-certs
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Exists
+      volumes:
+      - name: backup
+        persistentVolumeClaim:
+          claimName: core-backup
+      - name: cluster-ca
+        secret:
+          secretName: cluster-ca-cert
+      - name: mongodb-certs
+        secret:
+          secretName: icp-mongodb-client-cert
+      restartPolicy: Never
+  backoffLimit: 1
