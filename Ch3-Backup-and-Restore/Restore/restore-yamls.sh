@@ -25,8 +25,11 @@ do
     done
 done
 
-#pv
-kubectl delete pv $(kubectl get pv | grep -e "image-manager-" -e "icp-mongodb-" -e "mariadb-" -e "logging-datanode-" -e "kafka-" -e "zookeeper-" -e "minio-" -e "mgmt-repo-pv-" -e "helm-repo-pv-"  | awk '{print $1}')
-kubectl delete pvc -n kube-system $(kubectl get pvc -n kube-system | grep -e "image-manager-image-manager-" -e "mongodbdir-icp-mongodb-" -e "mysqldata-mariadb-" -e "data-logging-elk-data-" -e "-vulnerability-advisor-" -e "mgmt-repo-pvc-" -e "helm-repo-pvc-" -e "datadir-vulnerability-advisor-kafka-" -e "datadir-vulnerability-advisor-zookeeper-" -e "datadir-vulnerability-advisor-minio-" | awk '{print $1}')
+kubectl --force --grace-period=0 delete pv $(kubectl get pv | grep -e "image-manager-" -e "icp-mongodb-" -e "mariadb-" -e "logging-datanode-" -e "kafka-" -e "zookeeper-" -e "minio-"  | awk '{print $1}')
+
+kubectl patch pv $(kubectl get pv | grep Terminating | awk '{print $1}') -p '{"metadata":{"finalizers":null}}'
+
+kubectl delete pvc -n kube-system $(kubectl get pvc -n kube-system | grep -e "image-manager-image-manager-" -e "mongodbdir-icp-mongodb-" -e "mysqldata-mariadb-" -e "data-logging-elk-data-" -e "-vulnerability-advisor-" -e "datadir-vulnerability-advisor-kafka-" -e "datadir-vulnerability-advisor-zookeeper-" -e "datadir-vulnerability-advisor-minio-" | awk '{print $1}')
+
 
 echo "Done."
