@@ -1,6 +1,0 @@
-user=>catalog=>product
-
-For istio chapter we are going to use a simple commerical application which consist of 3 microservices.
-1. user: this microservice is for user validation, it calls microservices catalog if user authenticates
-2. catalog: this microservice calls product microservice to get list of products available for this user.
-3. product: this microservice gives list of products available for particular user.
