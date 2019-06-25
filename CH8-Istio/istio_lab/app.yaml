@@ -1,0 +1,143 @@
+##################################################################################################
+# user service
+#################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: user
+  labels:
+    app: user
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: user
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: user-v1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: user
+        version: v1
+    spec:
+      containers:
+      - name: user
+        image: sansing483/user:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
+##################################################################################################
+# catalog service
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+  labels:
+    app: catalog
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: catalog
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: catalog-v1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: catalog
+        version: v1
+    spec:
+      containers:
+      - name: catalog
+        image: sansing483/catalog:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: catalog-v2
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: catalog
+        version: v2
+    spec:
+      containers:
+      - name: catalog
+        image: sansing483/catalog:v2
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: catalog-v3
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: catalog
+        version: v3
+    spec:
+      containers:
+      - name: catalog
+        image: sansing483/catalog:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
+##################################################################################################
+# product service
+##################################################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: product
+  labels:
+    app: product
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: product
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: product-v1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: product
+        version: v1
+    spec:
+      containers:
+      - name: product
+        image: sansing483/product:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
