@@ -2,8 +2,11 @@ user=>catalog=>product
 
 For istio chapter we are going to use a simple commerical application which consist of 3 microservices.
 1. user: this microservice is for user validation, it calls microservices catalog if user authenticates
-2. catalog: this microservice calls product microservice to get list of products available for this user.
+2. catalog: this microservice calls product microservice to get list of products available for this user, this microservice 
+has 3 versions.
 3. product: this microservice gives list of products available for particular user.
 
-Dockerfile has been provided for each microservice in its directory, use it to create images, before trying exercises given 
-in book.
+Dockerfile has been provided for each microservice in its directory, use it to create images. After creating images go to 
+istio_lab directory and 
+run command 'kubectl apply -f <(istioctl kube-inject -f app.yaml)' it will creates pods with sidecars which will be used in 
+exercises of Istio chapter.
